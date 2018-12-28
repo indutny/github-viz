@@ -1,7 +1,10 @@
 import * as d3 from 'd3';
 const d3tip = require('d3-tip');
 
-const DURATION = 700;
+const EPSILON = 1e-23;
+const LEGEND_COLORS = 10;
+const LEGEND_COLOR_SIZE = 20;
+const LEGEND_PADDING = 4;
 
 export interface IHexScatterBin {
   readonly center: [ number, number ];
@@ -18,7 +21,7 @@ export interface IHexScatterInput {
 export class HexScatter {
   private readonly width = 1000;
   private readonly height = 600;
-  private readonly margin = { left: 86, top: 54, right: 20, bottom: 20 };
+  private readonly margin = { left: 36, top: 36, right: 56, bottom: 20 };
 
   constructor(private readonly selector: string) {
   }
@@ -46,8 +49,14 @@ export class HexScatter {
       return timeFormat(new Date(value.valueOf()));
     };
 
-    const xAxis = d3.axisTop(x).tickFormat(tickFormat);
-    const yAxis = d3.axisLeft(y).tickFormat(tickFormat);
+    const xAxis = d3.axisBottom(x)
+      .tickSizeOuter(0)
+      .tickSizeInner(this.height - this.margin.top - this.margin.bottom + 16)
+      .tickFormat(tickFormat);
+    const yAxis = d3.axisRight(y)
+      .tickSizeOuter(0)
+      .tickSizeInner(this.width - this.margin.left - this.margin.right + 16)
+      .tickFormat(tickFormat);
 
     const maxValue = d3.max(input.bins, (bin) => bin.value)!;
 
@@ -78,6 +87,11 @@ export class HexScatter {
 
     svg.call(tip);
 
+    const logValue = (d: IHexScatterBin) => {
+      return Math.log(EPSILON + d.value) / Math.log(EPSILON + maxValue);
+    };
+
+    // Chart itself
     svg
       .append('g')
       .attr('stroke', '#000')
@@ -89,20 +103,21 @@ export class HexScatter {
           return `translate(${x(d.center[0])},${y(d.center[1])})`;
         })
         .attr('d', this.hexagon(this.width * input.radius))
-        .attr('fill', d => {
-          return color(Math.log(1 + d.value) / Math.log(1 + maxValue));
-        })
+        .attr('fill', d => color(logValue(d)))
         .on('mouseover', tip.show)
         .on('mouseout', tip.hide);
 
+    // Axis and their titles
     svg
       .append('g')
-      .attr('transform', 'translate(0, 24)')
+      .attr('stroke-opacity', 0.2)
+      .attr('transform', `translate(0, ${this.margin.top - 16})`)
       .call(xAxis);
 
     svg
       .append('g')
-      .attr('transform', 'translate(64, 0)')
+      .attr('stroke-opacity', 0.2)
+      .attr('transform', `translate(${this.margin.left - 16}, 0)`)
       .call(yAxis);
 
     const xAxisMiddle =
@@ -114,15 +129,58 @@ export class HexScatter {
       .append('text')
       .attr('text-anchor', 'middle')
       .attr('transform',
-        `translate(${this.margin.left - 8},${yAxisMiddle}) rotate(-90)`)
+        `translate(${this.margin.left - 24},${yAxisMiddle}) rotate(-90)`)
       .text('updated at');
 
     svg
       .append('text')
       .attr('text-anchor', 'middle')
       .attr('transform',
-        `translate(${xAxisMiddle},${this.margin.top - 16})`)
+        `translate(${xAxisMiddle},${this.margin.top - 24})`)
       .text('created at');
+
+    // Legend
+    const legend = svg
+      .append('g')
+      .attr('transform', () => {
+        const x = this.width - this.margin.right - 64 - LEGEND_COLOR_SIZE - 16;
+        const y = this.height - this.margin.bottom -
+          LEGEND_COLOR_SIZE * LEGEND_COLORS - 32;
+        return `translate(${x}, ${y})`;
+      });
+
+    legend
+      .append('rect')
+      .attr('fill', '#fff')
+      .attr('fill-opacity', 0.6)
+      .attr('stroke', '#000')
+      .attr('stroke-opacity', 0.2)
+      .attr('width', LEGEND_COLOR_SIZE + 64 + 2 * LEGEND_PADDING)
+      .attr('height', LEGEND_COLOR_SIZE * LEGEND_COLORS + 2 * LEGEND_PADDING);
+
+    const legendCell = legend
+      .append('g')
+      .attr('transform', `translate(${LEGEND_PADDING}, ${LEGEND_PADDING})`)
+      .selectAll('g')
+      .data(d3.ticks(0, 1, LEGEND_COLORS - 1))
+      .enter()
+        .append('g')
+        .attr('transform', (d) => {
+          return `translate(0,${d * LEGEND_COLOR_SIZE * (LEGEND_COLORS - 1)})`
+        });
+
+    legendCell
+      .append('rect')
+      .attr('width', LEGEND_COLOR_SIZE)
+      .attr('height', LEGEND_COLOR_SIZE)
+      .attr('fill', (d) => color(d));
+
+    legendCell
+      .append('text')
+      .attr('text-anchor', 'start')
+      .attr('transform',
+        `translate(${LEGEND_COLOR_SIZE + 6},${LEGEND_COLOR_SIZE - 4})`)
+      .text((d) => Math.exp(d * Math.log(EPSILON + maxValue)).toFixed(0));
   }
 
   private hexagon(radius: number): string {
