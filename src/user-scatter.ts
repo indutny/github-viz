@@ -37,31 +37,29 @@ export class UserScatter {
     const res = await fetch(parent.attr('data-url'));
     const input: IUserScatterInput = await res.json();
 
-    const domain = [ input.offset, input.offset + input.range ];
+    const domain = [
+      new Date(input.offset),
+      new Date(input.offset + input.range),
+    ];
 
-    const x = d3.scaleLinear()
+    const x = d3.scaleTime()
       .domain(domain)
       .range([ this.margin.left, this.width - this.margin.right ]);
 
     const yOff = input.range * Math.max(0, 1 - this.height / this.width);
-    const y = d3.scaleLinear()
-      .domain([ input.offset + yOff, input.offset + input.range ])
+    const y = d3.scaleTime()
+      .domain([
+        new Date(input.offset + yOff),
+        new Date(input.offset + input.range),
+      ])
       .range([ this.height - this.margin.bottom, this.margin.top ]);
-
-    const timeFormat = d3.timeFormat('%Y/%m/%d');
-    const tickFormat = (value: number | { valueOf(): number },
-                        index: number): string => {
-      return timeFormat(new Date(value.valueOf()));
-    };
 
     const xAxis = d3.axisBottom(x)
       .tickSizeOuter(0)
-      .tickSizeInner(this.height - this.margin.top - this.margin.bottom + 16)
-      .tickFormat(tickFormat);
+      .tickSizeInner(this.height - this.margin.top - this.margin.bottom + 16);
     const yAxis = d3.axisRight(y)
       .tickSizeOuter(0)
-      .tickSizeInner(this.width - this.margin.left - this.margin.right + 16)
-      .tickFormat(tickFormat);
+      .tickSizeInner(this.width - this.margin.left - this.margin.right + 16);
 
     const maxValue = d3.max(input.bins, (bin) => bin.value)!;
 
@@ -79,6 +77,8 @@ export class UserScatter {
     const color = d3.scaleSequential(d3.interpolateSpectral)
       .domain([ 0, 1 ]);
 
+    const timeFormat = d3.timeFormat('%Y/%m/%d');
+
     // TODO(indutny): this is horrible
     const tip = (d3tip as any).default()
       .attr('class', 'd3-tip')
@@ -86,8 +86,8 @@ export class UserScatter {
       .offset([ Math.sqrt(3) / 2 * this.width * input.radius, 0 ])
       .html((d: IUserScatterBin) => {
         return `Users: ${d.value}<br/>` +
-          `Created at: ${tickFormat(d.center[0], 0)}<br/>` +
-          `Last profile update: ${tickFormat(d.center[1], 0)}<br/>`;
+          `Created at: ${timeFormat(new Date(d.center[0]))}<br/>` +
+          `Last profile update: ${timeFormat(new Date(d.center[1]))}<br/>`;
       });
 
     svg.call(tip);

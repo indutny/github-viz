@@ -1,35 +1,39 @@
 import * as d3 from 'd3';
 
-const EPSILON = 1e-23;
-const MAX_RADIUS = 8;
-const MAX_KINDS = 5;
-
 const LEGEND_COLOR_SIZE = 20;
 const LEGEND_PADDING = 4;
 
-interface IKeyRowPoint {
+interface IAreaRowPoint {
   readonly updatedAt: Date;
   readonly from: number;
   readonly to: number;
 }
 
-interface IKeyRow {
+interface IAreaRow {
   readonly title: string;
   readonly index: number;
-  readonly area: Array<IKeyRowPoint>;
+  readonly area: Array<IAreaRowPoint>;
 }
 
-interface IKeyPlotInput {
+interface IAreaInput {
   readonly legend: ReadonlyArray<string>;
   readonly columns: ReadonlyArray<[ number, ReadonlyArray<number> ]>;
 }
 
-export class KeyPlot {
+export interface IAreaOptions {
+  readonly maxKinds: number;
+  readonly xTitle: string;
+  readonly yTitle: string;
+  readonly percentOffset?: number;
+}
+
+export class Area {
   private readonly width = 1000;
   private readonly height = 600;
   private readonly margin = { left: 20, top: 20, right: 56, bottom: 32 };
 
-  constructor(private readonly selector: string) {
+  constructor(private readonly selector: string,
+              private readonly options: IAreaOptions) {
   }
 
   public async start() {
@@ -41,15 +45,19 @@ export class KeyPlot {
       .attr('height', this.height);
 
     const res = await fetch(parent.attr('data-url'));
-    const input: IKeyPlotInput = await res.json();
+    const input: IAreaInput = await res.json();
 
-    const rows: IKeyRow[] = input.legend.map((title, index) => {
+    let rows: IAreaRow[] = input.legend.map((title, index) => {
       return { title, index, area: [] };
-    }).slice(0, MAX_KINDS);
-    for (let [ updatedAt, stats ] of input.columns) {
-      stats = stats.slice(0, MAX_KINDS);
+    }).slice(0, this.options.maxKinds);
 
-      const total = d3.sum(stats);
+    for (let [ updatedAt, stats ] of input.columns) {
+      stats = stats.slice(0, rows.length);
+      if (!stats.some((x) => x !== 0)) {
+        continue;
+      }
+
+      const total = d3.sum(stats) + 1e-23;
       const percents = stats.map((value) => value / total);
       const rolling: Array<[ number, number ]> = [];
 
@@ -69,7 +77,7 @@ export class KeyPlot {
       .range([ this.margin.left, this.width - this.margin.right ]);
 
     const y = d3.scaleLinear()
-      .domain([ 0, 1 ])
+      .domain([ this.options.percentOffset || 0, 1 ])
       .range([ this.height - this.margin.bottom, this.margin.top ]);
 
     const xAxis = d3.axisBottom(x)
@@ -82,7 +90,7 @@ export class KeyPlot {
 
     const color = d3.scaleOrdinal(d3.schemeCategory10);
 
-    const area = d3.area<IKeyRowPoint>()
+    const area = d3.area<IAreaRowPoint>()
       .curve(d3.curveStep)
       .x((d) => x(d.updatedAt))
       .y0((d) => y(d.from))
@@ -120,14 +128,14 @@ export class KeyPlot {
       .attr('text-anchor', 'middle')
       .attr('transform',
         `translate(${this.margin.left - 8},${yAxisMiddle}) rotate(-90)`)
-      .text('percent of keys created');
+      .text(this.options.yTitle);
 
     svg
       .append('text')
       .attr('text-anchor', 'middle')
       .attr('transform',
         `translate(${xAxisMiddle},${this.margin.top - 8})`)
-      .text('last profile update');
+      .text(this.options.xTitle);
 
     // Legend
     const legendColors = rows.length;
