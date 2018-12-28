@@ -1,0 +1,34 @@
+{
+  "name": "github-viz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack -p",
+    "watch": "webpack --watch -d",
+    "clean": "rm -rf dist",
+    "lint": "tslint -c tslint.json src/**/*.ts test/**/*.ts",
+    "fix-lint": "npm run lint -- --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/d3": "^5.5.0",
+    "@types/d3-tip": "^3.5.5",
+    "@types/node": "^10.12.12",
+    "@types/whatwg-fetch": "0.0.33",
+    "d3": "^5.7.0",
+    "d3-tip": "^0.9.1",
+    "whatwg-fetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "ts-loader": "^5.3.2",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2",
+    "webpack": "^4.28.2",
+    "webpack-cli": "^3.1.2"
+  }
+}
