@@ -16,7 +16,7 @@ class App {
   }
 }
 
-const app = new App('#content');
+const app = new App('#github-created-vs-updated');
 
 app.start().then(() => {
 }).catch((e) => {
