@@ -9,7 +9,8 @@ class App {
   }
 
   public async start() {
-    const res = await fetch('github.json')
+    const res = await fetch(
+      'https://indutny.github.io/github-viz/dist/github.json');
     const input: IHexScatterInput = await res.json();
 
     this.scatter.start(input);

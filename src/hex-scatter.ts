@@ -16,9 +16,9 @@ export interface IHexScatterInput {
 }
 
 export class HexScatter {
-  private readonly width = 800;
-  private readonly height = 480;
-  private readonly margin = { left: 60, top: 30, right: 20, bottom: 20 };
+  private readonly width = 1000;
+  private readonly height = 600;
+  private readonly margin = { left: 70, top: 54, right: 20, bottom: 20 };
 
   constructor(private readonly selector: string) {
   }
@@ -46,8 +46,8 @@ export class HexScatter {
       return timeFormat(new Date(value.valueOf()));
     };
 
-    const xAxis = d3.axisBottom(x).tickFormat(tickFormat);
-    const yAxis = d3.axisRight(y).tickFormat(tickFormat);
+    const xAxis = d3.axisTop(x).tickFormat(tickFormat);
+    const yAxis = d3.axisLeft(y).tickFormat(tickFormat);
 
     const maxValue = d3.max(input.bins, (bin) => bin.value)!;
 
@@ -71,7 +71,7 @@ export class HexScatter {
       .direction('s')
       .offset([ Math.sqrt(3) / 2 * this.width * input.radius, 0 ])
       .html((d: IHexScatterBin) => {
-        return `Count: ${d.value}<br/>` +
+        return `Users: ${d.value}<br/>` +
           `Created at: ${tickFormat(d.center[0], 0)}<br/>` +
           `Updated at: ${tickFormat(d.center[1], 0)}<br/>`;
       });
@@ -97,11 +97,32 @@ export class HexScatter {
 
     svg
       .append('g')
+      .attr('transform', 'translate(0, 24)')
       .call(xAxis);
 
     svg
       .append('g')
+      .attr('transform', 'translate(48, 0)')
       .call(yAxis);
+
+    const xAxisMiddle =
+      (this.width + this.margin.left - this.margin.right) / 2;
+    const yAxisMiddle =
+      (this.height + this.margin.top - this.margin.bottom) / 2;
+
+    svg
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('transform',
+        `translate(${this.margin.left - 8},${yAxisMiddle}) rotate(-90)`)
+      .text('updated at');
+
+    svg
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('transform',
+        `translate(${xAxisMiddle},${this.margin.top - 16})`)
+      .text('created at');
   }
 
   private hexagon(radius: number): string {
