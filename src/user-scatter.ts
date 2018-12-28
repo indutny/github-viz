@@ -6,19 +6,19 @@ const LEGEND_COLORS = 10;
 const LEGEND_COLOR_SIZE = 20;
 const LEGEND_PADDING = 4;
 
-export interface IHexScatterBin {
+interface IUserScatterBin {
   readonly center: [ number, number ];
   readonly value: number;
 }
 
-export interface IHexScatterInput {
+interface IUserScatterInput {
   readonly offset: number;
   readonly range: number;
   readonly radius: number;
-  readonly bins: ReadonlyArray<IHexScatterBin>;
+  readonly bins: ReadonlyArray<IUserScatterBin>;
 }
 
-export class HexScatter {
+export class UserScatter {
   private readonly width = 1000;
   private readonly height = 600;
   private readonly margin = { left: 36, top: 36, right: 56, bottom: 20 };
@@ -26,11 +26,16 @@ export class HexScatter {
   constructor(private readonly selector: string) {
   }
 
-  public start(input: IHexScatterInput) {
-    const svg = d3.select(this.selector)
+  public async start() {
+    const parent = d3.select(this.selector);
+
+    const svg = parent
       .append('svg')
       .attr('width', this.width)
       .attr('height', this.height);
+
+    const res = await fetch(parent.attr('data-url'));
+    const input: IUserScatterInput = await res.json();
 
     const domain = [ input.offset, input.offset + input.range ];
 
@@ -61,7 +66,7 @@ export class HexScatter {
     const maxValue = d3.max(input.bins, (bin) => bin.value)!;
 
     // XXX(indutny): use d3 API
-    const bins = input.bins.map((bin): IHexScatterBin => {
+    const bins = input.bins.map((bin): IUserScatterBin => {
       return {
         value: bin.value,
         center: [
@@ -79,15 +84,15 @@ export class HexScatter {
       .attr('class', 'd3-tip')
       .direction('s')
       .offset([ Math.sqrt(3) / 2 * this.width * input.radius, 0 ])
-      .html((d: IHexScatterBin) => {
+      .html((d: IUserScatterBin) => {
         return `Users: ${d.value}<br/>` +
           `Created at: ${tickFormat(d.center[0], 0)}<br/>` +
-          `Updated at: ${tickFormat(d.center[1], 0)}<br/>`;
+          `Last profile update: ${tickFormat(d.center[1], 0)}<br/>`;
       });
 
     svg.call(tip);
 
-    const logValue = (d: IHexScatterBin) => {
+    const logValue = (d: IUserScatterBin) => {
       return Math.log(EPSILON + d.value) / Math.log(EPSILON + maxValue);
     };
 
@@ -130,7 +135,7 @@ export class HexScatter {
       .attr('text-anchor', 'middle')
       .attr('transform',
         `translate(${this.margin.left - 24},${yAxisMiddle}) rotate(-90)`)
-      .text('updated at');
+      .text('last profile update');
 
     svg
       .append('text')

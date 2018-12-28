@@ -1,23 +1,25 @@
 import 'whatwg-fetch';
-import { HexScatter, IHexScatterInput } from './hex-scatter';
+import { UserScatter } from './user-scatter';
+import { KeyPlot } from './key-plot';
 
 class App {
-  private readonly scatter: HexScatter;
+  private readonly users: UserScatter;
+  private readonly key: KeyPlot;
 
-  constructor(selector: string) {
-    this.scatter = new HexScatter(selector);
+  constructor() {
+    this.users = new UserScatter('#github-user-scatter');
+    this.key = new KeyPlot('#github-key-plot');
   }
 
   public async start() {
-    const res = await fetch(
-      'https://indutny.github.io/github-viz/dist/github.json');
-    const input: IHexScatterInput = await res.json();
-
-    this.scatter.start(input);
+    await Promise.all([
+      this.users.start(),
+      this.key.start(),
+    ]);
   }
 }
 
-const app = new App('#github-created-vs-updated');
+const app = new App();
 
 app.start().then(() => {
 }).catch((e) => {
