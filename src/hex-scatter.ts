@@ -18,7 +18,7 @@ export interface IHexScatterInput {
 export class HexScatter {
   private readonly width = 1000;
   private readonly height = 600;
-  private readonly margin = { left: 70, top: 54, right: 20, bottom: 20 };
+  private readonly margin = { left: 86, top: 54, right: 20, bottom: 20 };
 
   constructor(private readonly selector: string) {
   }
@@ -102,7 +102,7 @@ export class HexScatter {
 
     svg
       .append('g')
-      .attr('transform', 'translate(48, 0)')
+      .attr('transform', 'translate(64, 0)')
       .call(yAxis);
 
     const xAxisMiddle =
