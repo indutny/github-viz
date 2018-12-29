@@ -74,7 +74,7 @@ export class UserScatter {
       };
     });
 
-    const color = d3.scaleSequential(d3.interpolateSpectral)
+    const color = d3.scaleSequential(d3.interpolateGreys)
       .domain([ 0, 1 ]);
 
     const timeFormat = d3.timeFormat('%Y/%m/%d');
